@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
-// Main contract for decentralized tendering system
 
-//hello shureed
+// Main contract for decentralized tendering system
 contract BidChain {
     // Structure to store contractor details
     struct Contractor {
@@ -19,6 +18,7 @@ contract BidChain {
         uint256 submissionEndTime; // Deadline for bid submissions
         bool isOpen;               // Indicates if the tender is open for bids
         address winner;            // Winner's address after evaluation
+        int256 additionalInfo;     //add a additional integer  
     }
 
     // Structure to store bid details
@@ -50,12 +50,17 @@ contract BidChain {
     // Array to store addresses of all bidders in the current tender
     address[] public bidderAddresses;
 
+    // Array to store addresses of registered contractors
+    address[] public registeredContractors;
+
     // Events
     event ContractorRegistered(address contractorAddress, string companyName, string email);
     event ContractorRegistrationRequested(address contractorAddress, string companyName, string email);
-    event TenderOpened(string description, string noticeDocumentHash, uint256 endTime);
+    event TenderOpened(string description, string noticeDocumentHash, uint256 endTime, int256 additionalInfo);
     event BidSubmitted(address indexed contractor, uint256 amount, string ipfsHash);
     event WinnerAnnounced(address indexed winner, uint256 winningBid, string winnerDocumentHash);
+    event ContractorDeleted(address contractorAddress, string companyName, string email);
+
 
     // Modifier to restrict function access to contract owner
     modifier onlyOwner() {
@@ -80,23 +85,24 @@ contract BidChain {
         owner = msg.sender; // Set owner to the account deploying the contract
     }
 
-
     // Function to retrieve the owner of the contract
     function getContractOwner() public view returns (address) {
         return owner; // Return the contract owner
     }
 
-
     // Submit a registration request (contractor only)
     function submitRegistrationRequest(string memory _companyName, string memory _email) external {
-        require(pendingContractors[msg.sender].contractorAddress == address(0), "Registration request already submitted"); // Check if the contractor already submitted a request
-        pendingContractors[msg.sender] = Contractor(msg.sender, _companyName, _email, false); // Store pending registration details
-        addressList.push(msg.sender); // Add contractor address to the list
-        emit ContractorRegistrationRequested(msg.sender, _companyName, _email); // Emit event that registration request has been submitted
-    }
+    require(
+            pendingContractors[msg.sender].contractorAddress == address(0) && !isContractorRegistered(msg.sender),
+            "Registration request already submitted or contractor already registered"
+            );
+            pendingContractors[msg.sender] = Contractor(msg.sender, _companyName, _email, false); // Store pending registration details
+            addressList.push(msg.sender); // Add contractor address to the list
+            emit ContractorRegistrationRequested(msg.sender, _companyName, _email); // Emit event that registration request has been submitted
+        }
 
     // Admin can check pending contractors
-    function getPendingContractors() external view onlyOwner returns (Contractor[] memory) {
+    function getPendingContractors() external view returns (Contractor[] memory) {
         uint256 pendingCount = 0;
 
         // Count the number of pending contractors
@@ -126,13 +132,63 @@ contract BidChain {
         // Get the contractor details from the pendingContractors mapping
         Contractor memory contractor = pendingContractors[_contractorAddress];
         // Mark the contractor as registered
+        contractor.isRegistered = true;
         contractors[_contractorAddress] = contractor;
+        registeredContractors.push(_contractorAddress); // Add to the list of registered contractors
         // Remove from the pendingContractors list
         delete pendingContractors[_contractorAddress]; // Remove from pending list after registration
 
         // Emit the ContractorRegistered event with the contractor's details
         emit ContractorRegistered(_contractorAddress, contractor.companyName, contractor.email);
     }
+
+    // all can check all registered contractors
+    function getRegisteredContractors() external view returns (Contractor[] memory) {
+        uint256 registeredCount = registeredContractors.length;
+        Contractor[] memory registered = new Contractor[](registeredCount);
+        
+        for (uint i = 0; i < registeredCount; i++) {
+            registered[i] = contractors[registeredContractors[i]];
+        }
+
+        return registered; // Return the array of registered contractors
+    }
+
+    //check a contractor is registered or not
+    function isContractorRegistered(address _contractorAddress) internal view returns (bool) {
+        for (uint i = 0; i < registeredContractors.length; i++) {
+            if (registeredContractors[i] == _contractorAddress) {
+                return true;
+            }
+        }
+        return false;
+    }
+ 
+
+
+
+      // Function to delete a registered contractor
+    function deleteRegisteredContractor(address _contractorAddress) external onlyOwner {
+        require(contractors[_contractorAddress].isRegistered, "Contractor not registered");
+
+        // Retrieve contractor details for the event
+        Contractor memory contractor = contractors[_contractorAddress];
+
+        // Remove contractor from the mapping
+        delete contractors[_contractorAddress];
+
+        // Remove contractor from the registered contractors array
+        for (uint i = 0; i < registeredContractors.length; i++) {
+            if (registeredContractors[i] == _contractorAddress) {
+                registeredContractors[i] = registeredContractors[registeredContractors.length - 1];
+                registeredContractors.pop();
+                break;
+            }
+        }
+
+        emit ContractorDeleted(_contractorAddress, contractor.companyName, contractor.email);
+    }
+
 
     // Function to open a new tender, accessible by owner only
     function openTender(string memory _description, string memory _noticeDocumentHash, uint256 _duration) external onlyOwner {
@@ -143,11 +199,35 @@ contract BidChain {
             noticeDocumentHash: _noticeDocumentHash,
             submissionEndTime: block.timestamp + _duration, // Set end time based on duration
             isOpen: true,
-            winner: address(0) // No winner yet
+            winner: address(0), // No winner yet
+            additionalInfo: 0       // Default value for the new integer field
         });
 
-        emit TenderOpened(_description, _noticeDocumentHash, activeTender.submissionEndTime); // Emit tender opened event
+        emit TenderOpened(_description, _noticeDocumentHash, activeTender.submissionEndTime,activeTender.additionalInfo); // Emit tender opened event
     }
+
+
+
+    // Function to close the tender if the submission period has ended
+    function closeExpiredTender() external onlyOwner {
+        require(activeTender.isOpen, "No active tender");
+        //require(block.timestamp > activeTender.submissionEndTime, "Tender still active");
+        //activeTender.isOpen = false;
+        activeTender.additionalInfo = 1;
+        emit TenderOpened(activeTender.description, activeTender.noticeDocumentHash, activeTender.submissionEndTime,activeTender.additionalInfo); // Optional: Update if you track state changes
+      
+    }
+
+
+    //function to cancel the tender 
+    function cancelTender() external onlyOwner{
+        require(activeTender.isOpen, "No active tender");
+        activeTender.isOpen = false;
+        delete activeTender.noticeDocumentHash;
+        emit TenderOpened(activeTender.description, activeTender.noticeDocumentHash, activeTender.submissionEndTime,activeTender.additionalInfo); // Optional: Update if you track state changes
+    }
+
+
 
     // Function for registered contractors to submit their bid
     function submitBid(uint256 _amount, string memory _ipfsHash) external onlyRegisteredContractor tenderOpen {
@@ -195,9 +275,40 @@ contract BidChain {
     }
 
 
-    // View function to allow registered contractors to see the notice document hash of the active tender
-    function viewNoticeDocumentHash() external view onlyRegisteredContractor returns (string memory) {
-        require(activeTender.isOpen, "No active tender"); // Ensure there is an active tender
-        return activeTender.noticeDocumentHash; // Return the IPFS hash of the notice document
+    //to check if a notice is open or not
+
+    function isTenderOpen() external view returns (bool) {
+        return activeTender.isOpen;
     }
+
+
+   // View function to allow registered contractors or the owner to see all details of the active tender
+    function viewActiveTenderDetails() external view returns (
+    string memory description,
+    string memory noticeDocumentHash,
+    uint256 submissionEndTime,
+    int256 additionalInfo,
+    bool isOpen
+    ) {
+    require(
+        activeTender.isOpen, 
+        "No active tender"
+    ); // Ensure there is an active tender
+    require(
+        contractors[msg.sender].isRegistered || msg.sender == owner, 
+        "Not authorized"
+    ); // Ensure the caller is either a registered contractor or the owner
+
+ 
+    
+
+    // Return all the details of the active tender
+    return (
+        activeTender.description,
+        activeTender.noticeDocumentHash,
+        activeTender.submissionEndTime,
+        activeTender.additionalInfo,
+        activeTender.isOpen
+     );
+   }
 }

@@ -1,17 +1,19 @@
-/* styles/Footer.module.css */
-
 .footer {
-    font-size: 1rem;
-    color: #555;
-    font-weight: bold;
-    font-style: italic;
-    padding: 1rem;
-    background-color: #333;
-    color: white;
-    width: 100%;
-    text-align: center;
-  }
-  
-  .developer {
-    color: orangered;
-  }
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  font-size: 1rem;
+  color: #555;
+  font-weight: bold;
+  font-style: italic;
+  padding: 1rem;
+  background-color: #333;
+  color: white;
+  text-align: center;
+  z-index: 1000; /* Ensures it stays on top of other elements */
+}
+
+.developer {
+  color: orangered;
+}

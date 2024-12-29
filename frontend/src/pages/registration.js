@@ -1,16 +1,17 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import { toast } from "react-toastify";
-import { connectWallet, getProvider} from "@/utils/connectWallet";
-import useContract2 from "@/hooks/useContract2"; // Import your custom hook
+import { connectWallet, getProvider } from "@/utils/connectWallet";
+import useContract from "@/hooks/useContract"; // Import your custom hook
 import styles from "@/styles/Registration.module.css";
-import { Router, useRouter } from "next/router";
+import { useRouter } from "next/router";
 
 const RegistrationPage = () => {
-  const { contract,currentNonce} = useContract2("0x5FbDB2315678afecb367f032d93F642f64180aa3"); 
+  const { contract, currentNonce } = useContract("0x5FbDB2315678afecb367f032d93F642f64180aa3");
   const [walletAddress, setWalletAddress] = useState("");
   const [networkName, setNetworkName] = useState("");
+  const [hasSubmitted, setHasSubmitted] = useState(false);
 
   const router = useRouter();
 
@@ -31,8 +32,14 @@ const RegistrationPage = () => {
       setNetworkName(network.name);
       toast.success("Wallet connected successfully!");
 
-      
-
+      if (contract) {
+        const isRegistered = await contract.pendingContractors(address);
+        if (isRegistered.contractorAddress !== "0x0000000000000000000000000000000000000000") {
+          setHasSubmitted(true);
+        } else {
+          setHasSubmitted(false);
+        }
+      }
     } catch (error) {
       console.error("Error connecting wallet:", error.message);
       toast.error("Error connecting wallet: " + error.message);
@@ -46,27 +53,31 @@ const RegistrationPage = () => {
         return;
       }
 
-        // Check if currentNonce is available
-        if(currentNonce === undefined)
-        {
-          toast.error("Unable to retrieve the current nonce.");
-          return;
-        }
-        // Use the currentNonce for the transaction
-        const tx = await contract.submitRegistrationRequest(values.companyName, values.email,{
-          nonce: currentNonce, // Include the nonce in the transaction options
-        });
-        await tx.wait();
+      // Check if currentNonce is available
+      if (currentNonce === undefined) {
+        toast.error("Unable to retrieve the current nonce.");
+        return;
+      }
+
+      // Use the currentNonce for the transaction
+      const tx = await contract.submitRegistrationRequest(values.companyName, values.email, {
+        nonce: currentNonce, // Include the nonce in the transaction options
+      });
+      await tx.wait();
 
       toast.success("Registration request submitted successfully!");
       router.push("/");
     } catch (error) {
       console.error("Error submitting registration request:", error);
-        if (error.data && error.data.message && error.data.message.includes("Registration request already submitted")) {
-          toast.error("You have already submitted a registration request.");
-        } else {
-          toast.error("Failed to submit registration request.");
-        }
+      if (
+        error.data &&
+        error.data.message &&
+        error.data.message.includes("Registration request already submitted")
+      ) {
+        toast.error("You have already submitted a registration request.");
+      } else {
+        toast.error("Failed to submit registration request.");
+      }
     } finally {
       setSubmitting(false);
     }
@@ -75,7 +86,9 @@ const RegistrationPage = () => {
   return (
     <div className={`${styles.container} flex items-center justify-center min-h-screen`}>
       <div className={`${styles.card} w-full max-w-lg shadow-lg rounded-lg`}>
-        <h1 className={`${styles.title} text-3xl font-extrabold text-center mb-6`}>Bidder Registration</h1>
+        <h1 className={`${styles.title} text-3xl font-extrabold text-center mb-6`}>
+          Bidder Registration
+        </h1>
 
         <div className="text-center mb-6">
           <button
@@ -92,53 +105,75 @@ const RegistrationPage = () => {
           {networkName && <p><strong>Connected Network:</strong> {networkName}</p>}
         </div>
 
-        <Formik
-          initialValues={{ companyName: "", email: "" }}
-          validationSchema={validationSchema}
-          onSubmit={handleSubmit}
-        >
-          {({ isSubmitting }) => (
-            <Form className={`${styles.form} space-y-6`}>
-              <div>
-                <label htmlFor="companyName" className={`${styles.label} block font-semibold mb-2`}>
-                  Company Name
-                </label>
-                <Field
-                  type="text"
-                  id="companyName"
-                  name="companyName"
-                  className={`${styles.input}`}
-                  placeholder="Enter your company name"
-                />
-                <ErrorMessage name="companyName" component="div" className={`${styles.error}`} />
-              </div>
+        {hasSubmitted ? (
+          <div className="text-center">
+            <p className="text-lg font-semibold text-red-600">
+              You have already submitted a registration request.
+            </p>
+          </div>
+        ) : (
+          <Formik
+            initialValues={{ companyName: "", email: "" }}
+            validationSchema={validationSchema}
+            onSubmit={handleSubmit}
+          >
+            {({ isSubmitting }) => (
+              <Form className={`${styles.form} space-y-6`}>
+                <div>
+                  <label
+                    htmlFor="companyName"
+                    className={`${styles.label} block font-semibold mb-2`}
+                  >
+                    Company Name
+                  </label>
+                  <Field
+                    type="text"
+                    id="companyName"
+                    name="companyName"
+                    className={`${styles.input}`}
+                    placeholder="Enter your company name"
+                  />
+                  <ErrorMessage
+                    name="companyName"
+                    component="div"
+                    className={`${styles.error}`}
+                  />
+                </div>
 
-              <div>
-                <label htmlFor="email" className={`${styles.label} block font-semibold mb-2`}>
-                  Email Address
-                </label>
-                <Field
-                  type="email"
-                  id="email"
-                  name="email"
-                  className={`${styles.input}`}
-                  placeholder="Enter your email address"
-                />
-                <ErrorMessage name="email" component="div" className={`${styles.error}`} />
-              </div>
+                <div>
+                  <label
+                    htmlFor="email"
+                    className={`${styles.label} block font-semibold mb-2`}
+                  >
+                    Email Address
+                  </label>
+                  <Field
+                    type="email"
+                    id="email"
+                    name="email"
+                    className={`${styles.input}`}
+                    placeholder="Enter your email address"
+                  />
+                  <ErrorMessage
+                    name="email"
+                    component="div"
+                    className={`${styles.error}`}
+                  />
+                </div>
 
-              <div>
-                <button
-                  type="submit"
-                  className={`${styles.button}`}
-                  disabled={isSubmitting || !walletAddress}
-                >
-                  {isSubmitting ? "Submitting..." : "Register"}
-                </button>
-              </div>
-            </Form>
-          )}
-        </Formik>
+                <div>
+                  <button
+                    type="submit"
+                    className={`${styles.button}`}
+                    disabled={isSubmitting || !walletAddress}
+                  >
+                    {isSubmitting ? "Submitting..." : "Register"}
+                  </button>
+                </div>
+              </Form>
+            )}
+          </Formik>
+        )}
       </div>
     </div>
   );

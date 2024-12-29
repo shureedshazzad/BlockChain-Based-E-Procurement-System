@@ -6,41 +6,76 @@ import useContract from "@/hooks/useContract";
 const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false); // State to manage the menu toggle
   const [isOwner, setIsOwner] = useState(false); // State to check if the user is the owner
-  const { contract } = useContract("0x5FbDB2315678afecb367f032d93F642f64180aa3"); // Custom hook to interact with the contract
+  const [isRegisteredContractor, setIsRegisteredContractor] = useState(false); // State to check if the user is a registered contractor
+  const [isPendingContractor, setIsPendingContractor] = useState(false); // State to check if the user is a pending contractor
+  const [dropdownOpen, setDropdownOpen] = useState(false); // State for dropdown menu
+  const { contract } = useContract(
+    "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+  ); // Custom hook to interact with the contract
+  const [isTenderOpen, setIsTenderOpen] = useState(false); // Track if a tender is already active
 
   useEffect(() => {
-    const checkOwner = async () => {
+    const checkAccountStatus = async () => {
       if (contract && window.ethereum) {
         try {
           // Get the contract owner address
           const contractOwner = await contract.getContractOwner();
-          
+
+          const tenderOpenStatus = await contract.isTenderOpen();
+          setIsTenderOpen(tenderOpenStatus);
+
           // Get the connected account address
           const accounts = await window.ethereum.request({
             method: "eth_requestAccounts",
           });
           const connectedAccount = accounts[0];
 
-          console.log(connectedAccount);
+          // Check if the connected account is the owner
+          setIsOwner(
+            contractOwner.toLowerCase() === connectedAccount.toLowerCase()
+          );
 
-          // Compare contract owner with the connected account
-          setIsOwner(contractOwner.toLowerCase() === connectedAccount.toLowerCase());
+          // Get registered contractors
+          const registeredContractors =
+            await contract.getRegisteredContractors();
+          const contractorAddresses = registeredContractors
+            .map((c) => c.contractorAddress?.toLowerCase())
+            .filter((address) => address !== undefined);
+
+          // Check if the connected account is a registered contractor
+          setIsRegisteredContractor(
+            contractorAddresses.includes(connectedAccount.toLowerCase())
+          );
+
+          // Get pending contractors
+          const pendingContractors = await contract.getPendingContractors();
+          const pendingAddresses = pendingContractors
+            .map((c) => c.contractorAddress?.toLowerCase())
+            .filter((address) => address !== undefined);
+
+          // Check if the connected account is a pending contractor
+          setIsPendingContractor(
+            pendingAddresses.includes(connectedAccount.toLowerCase())
+          );
         } catch (err) {
-          console.error("Error checking owner status:", err);
+          console.error("Error checking account status:", err);
         }
       }
     };
 
     // Initial check
-    checkOwner();
+    checkAccountStatus();
 
     // Listen for account change in Metamask
-    window.ethereum.on('accountsChanged', checkOwner);
+    window.ethereum.on("accountsChanged", checkAccountStatus);
 
     // Cleanup listener on unmount
     return () => {
       if (window.ethereum.removeListener) {
-        window.ethereum.removeListener('accountsChanged', checkOwner);
+        window.ethereum.removeListener(
+          "accountsChanged",
+          checkAccountStatus
+        );
       }
     };
   }, [contract]);
@@ -48,6 +83,11 @@ const Navbar = () => {
   // Toggle menu open/close
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);
+  };
+
+  // Toggle dropdown menu
+  const toggleDropdown = () => {
+    setDropdownOpen(!dropdownOpen);
   };
 
   return (
@@ -69,18 +109,45 @@ const Navbar = () => {
         <li>
           <Link href="/">Home</Link>
         </li>
-        <li>
-          <Link href="/tender">Tender Notice</Link>
-        </li>
-        {/* Show "Show All Requests" for owner, otherwise show "Register" */}
-        {isOwner ? (
+
+        {/* Render Tender Notice link only if the user is the owner or a registered contractor */}
+        {(isOwner || isRegisteredContractor) && (
           <li>
-            <Link href="/showregrequest">Show All Registration Requests</Link>
+            <Link href="/tendernotice">Tender Notice</Link>
+          </li>
+        )}
+
+        {isOwner ? (
+          <li
+            className={styles.dropdown} // Dropdown container
+            onMouseEnter={toggleDropdown}
+            onMouseLeave={toggleDropdown}
+          >
+            <span className={styles.dropdownToggle}>Owner Actions</span>
+            {dropdownOpen && (
+              <ul className={styles.dropdownMenu}>
+                <li>
+                  <Link href="/showregrequest">Show All Pending Requests</Link>
+                </li>
+                <li>
+                  <Link href="/showregcontrators">
+                    Show All Registered Contractors
+                  </Link>
+                </li>
+                {!isTenderOpen && (
+                  <li>
+                    <Link href="/tenderinit">Initiate A Tender</Link>
+                  </li>
+                )}
+              </ul>
+            )}
           </li>
         ) : (
-          <li>
-            <Link href="/registration">Register</Link>
-          </li>
+          !isPendingContractor && !isRegisteredContractor && (
+            <li>
+              <Link href="/registration">Register</Link>
+            </li>
+          )
         )}
         <li>
           <Link href="/winner">Winner</Link>
