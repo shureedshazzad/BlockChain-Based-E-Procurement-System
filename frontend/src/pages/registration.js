@@ -3,18 +3,19 @@ import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import { toast } from "react-toastify";
 import { connectWallet, getProvider } from "@/utils/connectWallet";
-import useContract from "@/hooks/useContract"; // Import your custom hook
+import useContract from "@/hooks/useContract"; // Custom hook to interact with the smart contract
 import styles from "@/styles/Registration.module.css";
 import { useRouter } from "next/router";
 
 const RegistrationPage = () => {
-  const { contract, currentNonce } = useContract("0x5FbDB2315678afecb367f032d93F642f64180aa3");
-  const [walletAddress, setWalletAddress] = useState("");
-  const [networkName, setNetworkName] = useState("");
-  const [hasSubmitted, setHasSubmitted] = useState(false);
+  const { contract, currentNonce } = useContract("0x5FbDB2315678afecb367f032d93F642f64180aa3"); // Fetch contract and current nonce using custom hook
+  const [walletAddress, setWalletAddress] = useState(""); // Store the connected wallet address
+  const [networkName, setNetworkName] = useState(""); // Store the connected network name
+  const [hasSubmitted, setHasSubmitted] = useState(false); // Track whether the user has already submitted the registration
 
   const router = useRouter();
 
+  // Define validation schema for Formik (company name and email fields)
   const validationSchema = Yup.object({
     companyName: Yup.string()
       .required("Company name is required")
@@ -22,22 +23,24 @@ const RegistrationPage = () => {
     email: Yup.string().required("Email is required").email("Invalid email format"),
   });
 
+  // Function to handle wallet connection and check if the user is registered
   const handleConnectWallet = async () => {
     try {
-      const address = await connectWallet();
+      const address = await connectWallet(); // Connect the wallet and get the address
       setWalletAddress(address);
 
-      const provider = getProvider();
+      const provider = getProvider(); // Get the Ethereum provider to fetch network info
       const network = await provider.getNetwork();
       setNetworkName(network.name);
       toast.success("Wallet connected successfully!");
 
       if (contract) {
+        // Check if the user is already registered by calling the contract
         const isRegistered = await contract.pendingContractors(address);
         if (isRegistered.contractorAddress !== "0x0000000000000000000000000000000000000000") {
-          setHasSubmitted(true);
+          setHasSubmitted(true); // If the user is registered, set hasSubmitted to true
         } else {
-          setHasSubmitted(false);
+          setHasSubmitted(false); // If not, set hasSubmitted to false
         }
       }
     } catch (error) {
@@ -46,6 +49,7 @@ const RegistrationPage = () => {
     }
   };
 
+  // Function to handle form submission and interact with the smart contract
   const handleSubmit = async (values, { setSubmitting }) => {
     try {
       if (!contract) {
@@ -53,20 +57,20 @@ const RegistrationPage = () => {
         return;
       }
 
-      // Check if currentNonce is available
+      // Check if currentNonce is available before proceeding
       if (currentNonce === undefined) {
         toast.error("Unable to retrieve the current nonce.");
         return;
       }
 
-      // Use the currentNonce for the transaction
+      // Submit registration request to the smart contract
       const tx = await contract.submitRegistrationRequest(values.companyName, values.email, {
-        nonce: currentNonce, // Include the nonce in the transaction options
+        nonce: currentNonce, // Pass the currentNonce in the transaction options
       });
-      await tx.wait();
+      await tx.wait(); // Wait for the transaction to be mined
 
       toast.success("Registration request submitted successfully!");
-      router.push("/");
+      router.push("/"); // Redirect to the home page after successful submission
     } catch (error) {
       console.error("Error submitting registration request:", error);
       if (
@@ -79,7 +83,7 @@ const RegistrationPage = () => {
         toast.error("Failed to submit registration request.");
       }
     } finally {
-      setSubmitting(false);
+      setSubmitting(false); // Set submitting to false once the submission is complete
     }
   };
 
@@ -99,26 +103,27 @@ const RegistrationPage = () => {
               color: "white",
             }}
           >
-            {walletAddress ? "Wallet Connected" : "Connect Wallet"}
+            {walletAddress ? "Wallet Connected" : "Connect Wallet"} {/* Button text depends on whether the wallet is connected */}
           </button>
-          {walletAddress && <p><strong>Wallet Address:</strong> {walletAddress}</p>}
-          {networkName && <p><strong>Connected Network:</strong> {networkName}</p>}
+          {walletAddress && <p><strong>Wallet Address:</strong> {walletAddress}</p>} {/* Display wallet address */}
+          {networkName && <p><strong>Connected Network:</strong> {networkName}</p>} {/* Display network name */}
         </div>
 
         {hasSubmitted ? (
           <div className="text-center">
             <p className="text-lg font-semibold text-red-600">
               You have already submitted a registration request.
-            </p>
+            </p> {/* Inform the user if they have already submitted a request */}
           </div>
         ) : (
           <Formik
-            initialValues={{ companyName: "", email: "" }}
-            validationSchema={validationSchema}
-            onSubmit={handleSubmit}
+            initialValues={{ companyName: "", email: "" }} // Initial values for the form fields
+            validationSchema={validationSchema} // Apply the validation schema
+            onSubmit={handleSubmit} // Handle form submission
           >
             {({ isSubmitting }) => (
               <Form className={`${styles.form} space-y-6`}>
+                {/* Company Name field */}
                 <div>
                   <label
                     htmlFor="companyName"
@@ -140,6 +145,7 @@ const RegistrationPage = () => {
                   />
                 </div>
 
+                {/* Email field */}
                 <div>
                   <label
                     htmlFor="email"
@@ -161,11 +167,12 @@ const RegistrationPage = () => {
                   />
                 </div>
 
+                {/* Submit button */}
                 <div>
                   <button
                     type="submit"
                     className={`${styles.button}`}
-                    disabled={isSubmitting || !walletAddress}
+                    disabled={isSubmitting || !walletAddress} 
                   >
                     {isSubmitting ? "Submitting..." : "Register"}
                   </button>

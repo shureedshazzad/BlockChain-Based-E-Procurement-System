@@ -61,6 +61,19 @@
   background-color: #0056b3;
 }
 
+
+.submittedMessage {
+  color: #d9534f; /* Bootstrap red color for indicating warning/error */
+  font-size: 16px;
+  font-weight: bold;
+  margin-top: 20px;
+  padding: 10px;
+  border: 1px solid #d9534f; /* Red border to make the message stand out */
+  background-color: #f2dede; /* Light red background */
+  border-radius: 5px;
+  text-align: center;
+}
+
 @media (max-width: 600px) {
   .container {
     padding: 10px;
