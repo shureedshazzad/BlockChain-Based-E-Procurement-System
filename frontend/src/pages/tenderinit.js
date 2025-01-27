@@ -5,9 +5,13 @@ import { uploadToPinata } from "@/utils/pinata"; // Import Pinata upload utility
 import styles from "@/styles/TenderInit.module.css"; // Import component-specific styles
 import { useRouter } from "next/router"; // Import Next.js router for navigation
 
+import dotenv from "dotenv"
+
+dotenv.config();
+
 const TenderInitialize = () => {
   const router = useRouter(); // Initialize router for page navigation after success
-  const { contract, currentNonce } = useContract("0x5FbDB2315678afecb367f032d93F642f64180aa3"); // Get the contract and current nonce for transaction management
+  const { contract, currentNonce } = useContract(process.env.NEXT_PUBLIC_DEPLOYED_ADDRESS); // Get the contract and current nonce for transaction management
   const [description, setDescription] = useState(""); // State for storing the tender description
   const [duration, setDuration] = useState(0); // State for storing the tender duration in seconds
   const [file, setFile] = useState(null); // State for storing the uploaded file
@@ -96,23 +100,6 @@ const TenderInitialize = () => {
           {loading ? "Initializing..." : "Initialize Tender"} {/* Button text changes based on loading state */}
         </button>
       </form>
-
-      {/* Display the uploaded notice document hash (IPFS hash) after successful upload */}
-      {noticeDocumentHash && (
-        <div className={styles.result}>
-          <p className={styles.noticeHash}>
-            Notice Document Hash:{" "}
-            <a
-              href={`https://gateway.pinata.cloud/ipfs/${noticeDocumentHash}`} // Link to the uploaded file in Pinata
-              target="_blank"
-              rel="noopener noreferrer"
-              className={styles.link}
-            >
-              {noticeDocumentHash} {/* Display the IPFS hash */}
-            </a>
-          </p>
-        </div>
-      )}
     </div>
   );
 };

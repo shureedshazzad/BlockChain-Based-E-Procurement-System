@@ -4,9 +4,14 @@ import styles from "@/styles/TenderNotice.module.css"; // Importing styles
 import { toast } from "react-toastify"; // For showing toast notifications
 import { useRouter } from "next/router"; // Next.js router for page navigation
 
+
+import dotenv from "dotenv"
+
+dotenv.config();
+
 const TenderNotice = () => {
   // Contract and current nonce from the custom hook
-  const { contract, currentNonce } = useContract("0x5FbDB2315678afecb367f032d93F642f64180aa3");
+  const { contract, currentNonce } = useContract(process.env.NEXT_PUBLIC_DEPLOYED_ADDRESS);
   
   // States to hold various data for the tender and user's status
   const [activeTender, setActiveTender] = useState(null); // Active tender details
@@ -149,7 +154,15 @@ const TenderNotice = () => {
                 )}
               </>
             ) : (
+              <>     
               <p><strong>Status:</strong> Closed</p>
+              <button
+                className={styles.button}
+                onClick={() => router.push("/allsubmittedbid")}
+              >
+                Show All Submitted Bids
+              </button>
+              </>
             )}
             {isOwner && (
               <button className={styles.button} onClick={cancelTender}>

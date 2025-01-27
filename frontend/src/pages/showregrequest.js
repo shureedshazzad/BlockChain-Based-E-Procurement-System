@@ -3,9 +3,14 @@ import useContract from "@/hooks/useContract"; // Import your custom hook to int
 import styles from "@/styles/ShowRegReq.module.css"; // Import styles for the component
 import { toast } from "react-toastify"; // Import toast for showing notifications
 
+import dotenv from "dotenv"
+
+dotenv.config();
+
+
 const ShowRegRequest = () => {
   // Initialize contract state and fetch contract address via useContract hook, along with currentNonce for transaction management
-  const { contract, currentNonce } = useContract("0x5FbDB2315678afecb367f032d93F642f64180aa3"); // Smart contract address
+  const { contract, currentNonce } = useContract(process.env.NEXT_PUBLIC_DEPLOYED_ADDRESS); // Smart contract address
   const [pendingContractors, setPendingContractors] = useState([]); // State to store pending contractors
   const [loading, setLoading] = useState(false); // State to manage loading state while fetching contractors
   const [approvingStatus, setApprovingStatus] = useState({}); // State to track approving state for each contractor

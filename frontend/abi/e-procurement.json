@@ -270,6 +270,11 @@
         "type": "string"
       },
       {
+        "internalType": "string",
+        "name": "encryptedKeyHash",
+        "type": "string"
+      },
+      {
         "internalType": "bool",
         "name": "submitted",
         "type": "bool"
@@ -342,25 +347,6 @@
     "name": "deleteRegisteredContractor",
     "outputs": [],
     "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_contractor",
-        "type": "address"
-      }
-    ],
-    "name": "getBidIPFSHash",
-    "outputs": [
-      {
-        "internalType": "string",
-        "name": "",
-        "type": "string"
-      }
-    ],
-    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -646,6 +632,11 @@
         "internalType": "string",
         "name": "_ipfsHash",
         "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "_encryptedKeyHash",
+        "type": "string"
       }
     ],
     "name": "submitBid",
@@ -699,6 +690,34 @@
         "internalType": "bool",
         "name": "isOpen",
         "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "viewSubmittedBids",
+    "outputs": [
+      {
+        "internalType": "address[]",
+        "name": "",
+        "type": "address[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "string[]",
+        "name": "",
+        "type": "string[]"
+      },
+      {
+        "internalType": "string[]",
+        "name": "",
+        "type": "string[]"
       }
     ],
     "stateMutability": "view",

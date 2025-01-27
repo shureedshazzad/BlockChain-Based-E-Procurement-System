@@ -6,9 +6,12 @@ import { connectWallet, getProvider } from "@/utils/connectWallet";
 import useContract from "@/hooks/useContract"; // Custom hook to interact with the smart contract
 import styles from "@/styles/Registration.module.css";
 import { useRouter } from "next/router";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const RegistrationPage = () => {
-  const { contract, currentNonce } = useContract("0x5FbDB2315678afecb367f032d93F642f64180aa3"); // Fetch contract and current nonce using custom hook
+  const { contract, currentNonce } = useContract(process.env.NEXT_PUBLIC_DEPLOYED_ADDRESS); // Fetch contract and current nonce using custom hook
   const [walletAddress, setWalletAddress] = useState(""); // Store the connected wallet address
   const [networkName, setNetworkName] = useState(""); // Store the connected network name
   const [hasSubmitted, setHasSubmitted] = useState(false); // Track whether the user has already submitted the registration

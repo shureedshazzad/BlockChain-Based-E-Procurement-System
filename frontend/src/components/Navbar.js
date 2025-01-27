@@ -2,6 +2,9 @@ import Link from "next/link";
 import styles from "@/styles/Navbar.module.css";
 import { useState, useEffect } from "react";
 import useContract from "@/hooks/useContract";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false); // State to manage the menu toggle
@@ -10,7 +13,7 @@ const Navbar = () => {
   const [isPendingContractor, setIsPendingContractor] = useState(false); // State to check if the user is a pending contractor
   const [dropdownOpen, setDropdownOpen] = useState(false); // State for dropdown menu
   const { contract } = useContract(
-    "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+    process.env.NEXT_PUBLIC_DEPLOYED_ADDRESS
   ); // Custom hook to interact with the contract
   const [isTenderOpen, setIsTenderOpen] = useState(false); // Track if a tender is already active
 

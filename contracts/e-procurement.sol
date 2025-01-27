@@ -16,7 +16,7 @@
             string description;        // Description of the tender
             string noticeDocumentHash; // IPFS hash of the tender notice document
             uint256 submissionEndTime; // Deadline for bid submissions
-            bool isOpen;               // Indicates if the tender is open for bids
+            bool isOpen;               // Indicates if the tender is open for [bids]
             address winner;            // Winner's address after evaluation
             int256 additionalInfo;     //add a additional integer  
         }
@@ -25,6 +25,7 @@
         struct Bid {
             uint256 amount;     // Bid amount offered by contractor
             string ipfsHash;    // IPFS hash for the encrypted bid document
+            string encryptedKeyHash; //IPFS hash for encrypted secret key
             bool submitted;     // Status to check if the bid is submitted
             bool isWinner;      // Status to indicate if the bid is the winning one
         }
@@ -232,8 +233,7 @@
         //function to cancel the tender 
         function cancelTender() external onlyOwner{
             require(activeTender.isOpen, "No active tender");
-            activeTender.isOpen = false;
-            delete activeTender.noticeDocumentHash;
+            delete activeTender;
 
             for (uint i = 0; i < bidderAddresses.length; i++) {
                 address bidder = bidderAddresses[i];
@@ -242,19 +242,19 @@
             }
             // Reset the list of bidder addresses
             delete bidderAddresses;
-            emit TenderOpened(activeTender.description, activeTender.noticeDocumentHash, activeTender.submissionEndTime,activeTender.additionalInfo); // Optional: Update if you track state changes
         }
 
 
 
         // Function for registered contractors to submit their bid
-        function submitBid(uint256 _amount, string memory _ipfsHash) external onlyRegisteredContractor tenderOpen {
+        function submitBid(uint256 _amount, string memory _ipfsHash,string memory _encryptedKeyHash) external onlyRegisteredContractor tenderOpen {
             require(!hasSubmittedBid[msg.sender], "Bid already submitted"); // Use hasSubmittedBid for validation
 
             // Store the bid details in the mapping
             bids[msg.sender] = Bid({
                 amount: _amount,
                 ipfsHash: _ipfsHash,
+                encryptedKeyHash: _encryptedKeyHash,
                 submitted: true,
                 isWinner: false
             });
@@ -282,12 +282,6 @@
         // View function to get details of the winner's bid
         function getWinnerDetails() external view returns (address, uint256, string memory) {
             return (activeTender.winner, bids[activeTender.winner].amount, bids[activeTender.winner].ipfsHash); // Return winner's address, bid amount, and IPFS hash
-        }
-
-        // View function to get the IPFS hash of a specific contractor's bid
-        function getBidIPFSHash(address _contractor) external view returns (string memory) {
-            require(bids[_contractor].submitted, "Bid not submitted"); // Ensure bid was submitted
-            return bids[_contractor].ipfsHash; // Return IPFS hash of the bid document
         }
 
         // Utility function to retrieve all bidder addresses in the current tender
@@ -337,4 +331,30 @@
     function hasContractorSubmittedBid(address _contractor) external view returns (bool) {
         return hasSubmittedBid[_contractor]; // Return the bid submission status (true/false)
     }
+
+    //view all submitted bid details
+
+    function viewSubmittedBids() public view onlyOwner returns (address[] memory, uint256[] memory, string[] memory,string[] memory) {
+         require(activeTender.isOpen, "No active tender");
+         require(activeTender.additionalInfo == 1, "Tender is not closed yet");
+
+        uint256 count = bidderAddresses.length;
+
+        address[] memory addresses = new address[](count);
+        uint256[] memory amounts = new uint256[](count);
+        string[] memory ipfsHashes = new string[](count);
+        string[] memory encryptedKeyHashes = new string[](count);
+
+        for(uint256 i = 0; i < count; i++)
+        {
+            address bidder = bidderAddresses[i];
+            addresses[i] = bidder;
+            amounts[i] = bids[bidder].amount;
+            ipfsHashes[i] = bids[bidder].ipfsHash;
+            encryptedKeyHashes[i] = bids[bidder].encryptedKeyHash;
+        }
+
+        return (addresses, amounts, ipfsHashes,encryptedKeyHashes);
+
+    } 
 }

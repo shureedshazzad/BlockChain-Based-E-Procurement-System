@@ -2,10 +2,13 @@ import React, { useState, useEffect } from "react";
 import useContract from "@/hooks/useContract"; // Import your custom hook to interact with the smart contract
 import styles from "@/styles/ShowRegContractors.module.css"; // Import styles for the component
 import { toast } from "react-toastify"; // Import toast for showing notifications
+import dotenv from "dotenv"
+
+dotenv.config();
 
 const ShowRegContractors = () => {
   // Initialize contract state and fetch contract address via useContract hook
-  const { contract } = useContract("0x5FbDB2315678afecb367f032d93F642f64180aa3"); // Smart contract address
+  const { contract } = useContract(process.env.NEXT_PUBLIC_DEPLOYED_ADDRESS); // Smart contract address
   const [registeredContractors, setRegisteredContractors] = useState([]); // State to store registered contractors
   const [loading, setLoading] = useState(false); // State to manage loading state while fetching contractors
   const [deletingStatus, setDeletingStatus] = useState({}); // State to track deleting state for each contractor
