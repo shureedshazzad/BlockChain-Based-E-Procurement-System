@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "/home/shureed534/blockchain-based-e-tender-project/contracts/e-procurement.sol": {
-      "lastModificationDate": 1736877736749,
-      "contentHash": "ac5901b13d14206fccc18f7eafd7b327",
+      "lastModificationDate": 1741367326577,
+      "contentHash": "19e36785d433e41fc3245a1f1eb52c5d",
       "sourceName": "contracts/e-procurement.sol",
       "solcConfig": {
         "version": "0.8.27",
@@ -35,6 +35,117 @@
       ],
       "artifacts": [
         "BidChain"
+      ]
+    },
+    "/home/shureed534/blockchain-based-e-tender-project/node_modules/@chainlink/contracts/src/v0.8/automation/AutomationCompatible.sol": {
+      "lastModificationDate": 1738172118128,
+      "contentHash": "5e080eff2df83e7d1ec3b981fddeb1ce",
+      "sourceName": "@chainlink/contracts/src/v0.8/automation/AutomationCompatible.sol",
+      "solcConfig": {
+        "version": "0.8.27",
+        "settings": {
+          "evmVersion": "paris",
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./AutomationBase.sol",
+        "./interfaces/AutomationCompatibleInterface.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "AutomationCompatible"
+      ]
+    },
+    "/home/shureed534/blockchain-based-e-tender-project/node_modules/@chainlink/contracts/src/v0.8/automation/AutomationBase.sol": {
+      "lastModificationDate": 1738172118118,
+      "contentHash": "b53171d7e10f5036ecc73fac5d28028b",
+      "sourceName": "@chainlink/contracts/src/v0.8/automation/AutomationBase.sol",
+      "solcConfig": {
+        "version": "0.8.27",
+        "settings": {
+          "evmVersion": "paris",
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "AutomationBase"
+      ]
+    },
+    "/home/shureed534/blockchain-based-e-tender-project/node_modules/@chainlink/contracts/src/v0.8/automation/interfaces/AutomationCompatibleInterface.sol": {
+      "lastModificationDate": 1738172118128,
+      "contentHash": "5cb8d69e4e9ed7ff601180e31372d0ca",
+      "sourceName": "@chainlink/contracts/src/v0.8/automation/interfaces/AutomationCompatibleInterface.sol",
+      "solcConfig": {
+        "version": "0.8.27",
+        "settings": {
+          "evmVersion": "paris",
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "AutomationCompatibleInterface"
       ]
     }
   }

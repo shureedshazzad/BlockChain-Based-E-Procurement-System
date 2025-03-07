@@ -4,24 +4,24 @@ import styles from "@/styles/TenderNotice.module.css"; // Importing styles
 import { toast } from "react-toastify"; // For showing toast notifications
 import { useRouter } from "next/router"; // Next.js router for page navigation
 
-
-import dotenv from "dotenv"
+import dotenv from "dotenv";
 
 dotenv.config();
 
 const TenderNotice = () => {
-  // Contract and current nonce from the custom hook
+  // Contract and nonce from the custom hook
   const { contract, currentNonce } = useContract(process.env.NEXT_PUBLIC_DEPLOYED_ADDRESS);
-  
-  // States to hold various data for the tender and user's status
-  const [activeTender, setActiveTender] = useState(null); // Active tender details
-  const [timeLeft, setTimeLeft] = useState(0); // Time left for tender submission
-  const [isOwner, setIsOwner] = useState(false); // Whether the current user is the owner
-  const [isRegisteredContractor, setIsRegisteredContractor] = useState(false); // Whether the current user is a registered contractor
-  const [isTenderOpen, setIsTenderOpen] = useState(false); // Whether the tender is open
-  const [hasSubmittedBid, setHasSubmittedBid] = useState(false); // Whether the user has already submitted a bid
 
-  const router = useRouter(); // Using Next.js router to navigate between pages
+  // States to hold various tender and user-related data
+  const [activeTender, setActiveTender] = useState(null);
+  const [timeLeft, setTimeLeft] = useState(0);
+  const [isOwner, setIsOwner] = useState(false);
+  const [isRegisteredContractor, setIsRegisteredContractor] = useState(false);
+  const [isTenderOpen, setIsTenderOpen] = useState(false);
+  const [hasSubmittedBid, setHasSubmittedBid] = useState(false);
+  const [isWithdrawing, setIsWithdrawing] = useState(false); // Loading state for withdrawing
+
+  const router = useRouter(); // Next.js router for navigation
 
   // Fetching tender details when the component is mounted or the contract changes
   useEffect(() => {
@@ -31,7 +31,6 @@ const TenderNotice = () => {
       try {
         // Fetch contract owner address
         const owner = await contract.getContractOwner();
-        
         // Check if the tender is open
         const tenderOpenStatus = await contract.isTenderOpen();
         setIsTenderOpen(tenderOpenStatus);
@@ -43,7 +42,7 @@ const TenderNotice = () => {
         // Check if the connected account is the owner
         setIsOwner(owner.toLowerCase() === connectedAccount.toLowerCase());
 
-        // Get list of registered contractors and check if the connected account is a registered contractor
+        // Get list of registered contractors and check if the connected account is registered
         const registeredContractors = await contract.getRegisteredContractors();
         const contractorAddresses = registeredContractors
           .map(c => c.contractorAddress?.toLowerCase())
@@ -66,11 +65,11 @@ const TenderNotice = () => {
         if (tender.isOpen && BigInt(tender.submissionEndTime) > BigInt(currentTime)) {
           setTimeLeft(Number(BigInt(tender.submissionEndTime) - BigInt(currentTime)));
         } else {
-          setTimeLeft(0); // Set timeLeft to 0 if the tender is closed
+          setTimeLeft(0);
         }
 
         // Check if the user has already submitted a bid
-        const bidStatus = await contract.hasSubmittedBid(connectedAccount); 
+        const bidStatus = await contract.hasSubmittedBid(connectedAccount);
         setHasSubmittedBid(bidStatus);
 
       } catch (error) {
@@ -80,15 +79,33 @@ const TenderNotice = () => {
     };
 
     fetchTenderDetails();
-  }, [contract]); // Effect runs when the contract changes
+  }, [contract]);
 
   // Updating the countdown timer every second
   useEffect(() => {
     if (timeLeft > 0) {
       const timer = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
-      return () => clearInterval(timer); // Clean up the interval on component unmount
+      return () => clearInterval(timer);
     }
   }, [timeLeft]);
+
+  // Function to withdraw a bid
+  const withdrawBid = async () => {
+    if (!contract) return;
+
+    try {
+      setIsWithdrawing(true); // Start loading state
+      const tx = await contract.withdrawBid({ nonce: currentNonce });
+      await tx.wait();
+      toast.success("Bid successfully withdrawn!");
+      router.back(); // Redirect to the previous page
+    } catch (error) {
+      console.error("Withdraw bid failed:", error);
+      toast.error("Failed to withdraw bid!");
+    } finally {
+      setIsWithdrawing(false); // Stop loading state
+    }
+  };
 
   // Function to close the tender if expired
   const closeExpiredTender = async () => {
@@ -96,7 +113,7 @@ const TenderNotice = () => {
       const tx = await contract.closeExpiredTender({ nonce: currentNonce });
       await tx.wait();
       toast.success("Tender successfully closed!");
-      router.push("/"); // Redirecting to the home page
+      router.push("/");
     } catch (error) {
       toast.error("Failed to close tender!");
     }
@@ -108,8 +125,8 @@ const TenderNotice = () => {
       const tx = await contract.cancelTender({ nonce: currentNonce });
       await tx.wait();
       toast.success("Tender successfully canceled");
-      setActiveTender(null); // Clear active tender details
-      router.push("/"); // Redirect to the home page
+      setActiveTender(null);
+      router.push("/");
     } catch (error) {
       toast.error("Failed to cancel tender!");
     }
@@ -120,7 +137,7 @@ const TenderNotice = () => {
     if (timeLeft === 0 && activeTender?.isOpen) {
       closeExpiredTender();
     }
-  }, [timeLeft, activeTender]); // Effect runs when timeLeft or activeTender changes
+  }, [timeLeft, activeTender]);
 
   return (
     <div className={styles.container}>
@@ -171,7 +188,16 @@ const TenderNotice = () => {
             )}
             {isRegisteredContractor && Number(activeTender.additionalInfo) === 0 && (
               hasSubmittedBid ? (
-                <p className={styles.submittedMessage}>You have already submitted your bid.</p>
+                <>
+                  <p className={styles.submittedMessage}>You have already submitted your bid.</p>
+                  <button 
+                    className={styles.button} 
+                    onClick={withdrawBid}
+                    disabled={isWithdrawing}
+                  >
+                    {isWithdrawing ? "Withdrawing..." : "Withdraw Bid"}
+                  </button>
+                </>
               ) : (
                 <button
                   className={styles.button}
