@@ -18,6 +18,8 @@
     "fast-text-encoding": "^1.0.6",
     "formik": "^2.4.6",
     "next": "15.0.3",
+    "pdf-parse": "^1.1.1",
+    "pdfjs-dist": "^4.10.38",
     "react": "19.0.0-rc-66855b96-20241106",
     "react-dom": "19.0.0-rc-66855b96-20241106",
     "react-toastify": "^10.0.6",

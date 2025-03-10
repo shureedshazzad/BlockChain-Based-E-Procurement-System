@@ -1,185 +1,105 @@
-/* TenderInit.module.css */
-
-/* Container styles */
 .container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    background-color: #f8f9fa;
-    padding: 1rem;
-}
-
-/* Card styles */
-.card {
-    background: #fff;
-    border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    padding: 2rem;
-    max-width: 500px;
-    width: 100%;
-}
-
-/* Heading styles */
-.heading {
-    text-align: center;
-    font-size: 2.5rem;
-    font-weight: bold;
-    color: #ff7e5f; /* Matching the button gradient color */
-    margin-bottom: 2rem;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    position: relative;
-    padding-bottom: 0.5rem;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   }
   
-  .heading::after {
-    content: "";
-    position: absolute;
-    width: 80px;
-    height: 4px;
-    background: linear-gradient(to right, #ff7e5f, #feb47b);
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    border-radius: 2px;
-  }
-
-/* Form styles */
-.form {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
-.formGroup {
-    display: flex;
-    flex-direction: column;
-}
-
-.formGroup label {
-    font-weight: bold;
-    margin-bottom: 0.5rem;
-    color: #555;
-}
-
-.formGroup input {
-    padding: 0.75rem;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 1rem;
+  .heading {
+    text-align: center;
     color: #333;
-    transition: border-color 0.3s;
-}
-
-.formGroup input:focus {
-    border-color: orangered;
-    outline: none;
-}
-
-/* Submit button styles */
-.submitButton {
-    padding: 0.75rem;
-    background-color: orangered;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    font-size: 1rem;
-    font-weight: bold;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-}
-
-.submitButton:hover {
-    background-color: #e63946;
-}
-
-.submitButton:disabled {
-    background-color: #ccc;
-    cursor: not-allowed;
-}
-
-/* Transaction link styles */
-.transactionLink {
-    margin-top: 1rem;
-    text-align: center;
-    font-size: 0.9rem;
-    color: #555;
-}
-
-.transactionLink a {
-    color: orangered;
-    text-decoration: none;
-}
-
-.transactionLink a:hover {
-    text-decoration: underline;
-}
-
-
-/* Button styles */
-.button {
-    padding: 0.75rem 1.5rem;
-    background: linear-gradient(to right, #ff7e5f, #feb47b); /* Vibrant gradient */
-    color: white;
-    font-size: 1.2rem;
-    font-weight: bold;
-    border: none;
-    border-radius: 25px;
-    cursor: pointer;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    margin-bottom: 20px;
   }
   
-  .button:hover {
-    transform: scale(1.05); /* Slight scaling effect */
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+  .form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .formGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  
+  .label {
+    font-weight: bold;
+    color: #555;
+  }
+  
+  .input {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 16px;
+  }
+  
+  .buttonGroup {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+  }
+  
+  .button {
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
   }
   
   .button:disabled {
-    background: #ddd; /* Muted color for disabled state */
+    background-color: #ccc;
     cursor: not-allowed;
-    box-shadow: none;
+  }
+  
+  .noticeContainer {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: #e9ecef;
+    border-radius: 5px;
+  }
+  
+  .noticeHeading {
+    color: #333;
+    margin-bottom: 10px;
+  }
+  
+  .noticeText {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    color: #555;
   }
 
-
-
-/* Mobile responsiveness */
-@media (max-width: 768px) {
-    .card {
-        padding: 1.5rem;
+  .highlight {
+    font-weight: bold;
+    color: #ff7e5f; /* Highlight color */
+    background-color: #fff3f0; /* Light background for contrast */
+    padding: 2px 4px;
+    border-radius: 4px;
+  }
+  
+  /* Mobile Responsiveness */
+  @media (max-width: 768px) {
+    .container {
+      padding: 15px;
     }
-
-    .heading {
-        font-size: 1.5rem;
+  
+    .input {
+      font-size: 14px;
     }
-
-    .formGroup input {
-        font-size: 0.9rem;
-        padding: 0.5rem;
+  
+    .button {
+      font-size: 14px;
+      padding: 8px 16px;
     }
-
-    .submitButton {
-        font-size: 0.9rem;
-        padding: 0.6rem;
+  
+    .buttonGroup {
+      flex-direction: column;
     }
-
-    .transactionLink {
-        font-size: 0.8rem;
-    }
-
-    .result {
-        margin-top: 20px;
-      }
-      
-      .noticeHash {
-        color: #ff5722; /* Attractive orange */
-        font-weight: bold;
-        font-size: 1.2rem;
-      }
-      
-      .link {
-        text-decoration: underline;
-        color: #007bff;
-      }
-}
+  }

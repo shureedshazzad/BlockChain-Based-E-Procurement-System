@@ -1,26 +1,29 @@
 import React, { useEffect, useState } from "react";
 import useContract from "@/hooks/useContract";
 import styles from "@/styles/AllSubmittedBid.module.css";
-import { useRouter } from "next/router"; // Import useRouter for navigation
+import { useRouter } from "next/router";
+import axios from "axios";
+import CryptoJS from "crypto-js";
 import dotenv from "dotenv";
+import init, * as ecies from "ecies-wasm";
+import { ec as EC } from "elliptic";
 
 dotenv.config();
-
 
 const AllSubmittedBids = () => {
   const { contract } = useContract(process.env.NEXT_PUBLIC_DEPLOYED_ADDRESS);
   const [bidderAddresses, setBidderAddresses] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [isDecrypting, setIsDecrypting] = useState(false); // For Test button loading state
 
-  const router = useRouter(); // Use router for navigation
+  const router = useRouter();
 
   useEffect(() => {
     const fetchBidderAddresses = async () => {
       if (!contract) return;
-
       try {
         setLoading(true);
-        const addresses = await contract.getBidderAddresses(); // Call the getBidderAddresses function
+        const addresses = await contract.getBidderAddresses();
         setBidderAddresses(addresses);
       } catch (error) {
         console.error("Error fetching bidder addresses:", error);
@@ -32,16 +35,82 @@ const AllSubmittedBids = () => {
     fetchBidderAddresses();
   }, [contract]);
 
-  // Function to handle "View Details" button click
+  // Navigate to the BidInfoOfSpecificBidder page with the bidder's address
   const handleButtonClick = (address) => {
-    // Navigate to the BidInfoOfSpecificBidder page with the address as a query parameter
     router.push(`/bidinfoofspecificbidder?address=${address}`);
   };
 
+  // Function to fetch & decrypt all bid data
+  const fetchAndDecryptAllBids = async () => {
+    if (!contract) return;
+    try {
+      setIsDecrypting(true);
+      console.log("Fetching submitted bids...");
+
+      // Fetch all submitted bid details
+      const [addresses, amounts, ipfsHashes, encryptedKeyHashes] = await contract.viewSubmittedBids();
+
+      for (let i = 0; i < addresses.length; i++) {
+        console.log("Bidder Address:", addresses[i]);
+
+        // Fetch encrypted bid document from IPFS
+        const dataResponse = await axios.get(`https://gateway.pinata.cloud/ipfs/${ipfsHashes[i]}`);
+        const encryptedData = dataResponse.data;
+
+        // Fetch encrypted symmetric key from IPFS
+        const keyResponse = await axios.get(`https://gateway.pinata.cloud/ipfs/${encryptedKeyHashes[i]}`);
+        const encryptedKey = keyResponse.data;
+
+        // Decrypt the AES key
+        const decryptedKey = await decryptSymmetricKey(encryptedKey);
+
+        // Decrypt bid details using AES key
+        const decryptedBidDetails = await decryptData(encryptedData, decryptedKey);
+
+        console.log("Decrypted Bid Data:", decryptedBidDetails);
+      }
+    } catch (error) {
+      console.error("Error fetching or decrypting bid details:", error);
+    } finally {
+      setIsDecrypting(false);
+    }
+  };
+
+  // Decrypt the symmetric AES key (using a password-based key derivation)
+  const decryptSymmetricKey = async (encryptedKey) => {
+    const password = process.env.NEXT_PUBLIC_ELIPTIC_CRYPTOGRAPHY_PASSWORD;
+    const hashedPassword = CryptoJS.SHA256(password).toString(CryptoJS.enc.Hex);
+    const ec = new EC("secp256k1");
+    const keyPair = ec.keyFromPrivate(hashedPassword);
+
+    // Extract private key as bytes
+    const privateKey = fromHexString(keyPair.getPrivate("hex"));
+
+    // Initialize WASM module
+    await init();
+
+    // Decrypt AES key
+    const encryptedKeyBytes = fromHexString(encryptedKey);
+    const decryptedKeyBytes = ecies.decrypt(privateKey, encryptedKeyBytes);
+
+    // Convert decrypted key back to a string
+    return new TextDecoder().decode(decryptedKeyBytes);
+  };
+
+  // Helper function to convert hex string to Uint8Array
+  const fromHexString = (hexString) =>
+    new Uint8Array(hexString.match(/.{1,2}/g).map((byte) => parseInt(byte, 16)));
+
+  // Decrypt data using AES-256
+  const decryptData = (encryptedData, aesKey) => {
+    const bytes = CryptoJS.AES.decrypt(encryptedData, aesKey);
+    return JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
+  };
 
   return (
     <div className={styles.container}>
       <h1 className={styles.title}>Bidder Addresses</h1>
+
       {loading ? (
         <p className={styles.loading}>Loading bidder addresses...</p>
       ) : (
@@ -50,10 +119,9 @@ const AllSubmittedBids = () => {
             bidderAddresses.map((address, index) => (
               <div key={index} className={styles.bidCard}>
                 <p><strong>Bidder Address:</strong> {address}</p>
-                {/* Add buttons here */}
                 <button 
                   className={styles.bidderButton}
-                  onClick={() => handleButtonClick(address)} // Pass address to the handler
+                  onClick={() => handleButtonClick(address)}
                 >
                   View Details
                 </button>
@@ -64,6 +132,17 @@ const AllSubmittedBids = () => {
           )}
         </div>
       )}
+
+      {/* Centered Test Button for Better UI */}
+      <div className={styles.buttonContainer}>
+        <button
+          className={styles.testButton}
+          onClick={fetchAndDecryptAllBids}
+          disabled={isDecrypting}
+        >
+          {isDecrypting ? "Decrypting..." : "Test"}
+        </button>
+      </div>
     </div>
   );
 };

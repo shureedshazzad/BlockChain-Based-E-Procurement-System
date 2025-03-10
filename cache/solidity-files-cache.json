@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "/home/shureed534/blockchain-based-e-tender-project/contracts/e-procurement.sol": {
-      "lastModificationDate": 1741367326577,
-      "contentHash": "19e36785d433e41fc3245a1f1eb52c5d",
+      "lastModificationDate": 1741410266797,
+      "contentHash": "d8f86244b88970412cbeb42c3433bfcf",
       "sourceName": "contracts/e-procurement.sol",
       "solcConfig": {
         "version": "0.8.27",

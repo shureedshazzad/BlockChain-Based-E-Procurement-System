@@ -35,13 +35,27 @@
   color: #444;
 }
 
-.link {
-  color: #007bff;
-  text-decoration: none;
+.noticeContainer {
+  margin-top: 20px;
+  padding: 15px;
+  background-color: #e9ecef;
+  border-radius: 5px;
 }
 
-.link:hover {
-  text-decoration: underline;
+.noticeHeading {
+  font-size: 1.25rem;
+  font-weight: bold;
+  margin-bottom: 10px;
+  color: #333;
+}
+
+.noticeText {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-family: monospace;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: #555;
 }
 
 .button {
@@ -61,17 +75,24 @@
   background-color: #0056b3;
 }
 
-
 .submittedMessage {
-  color: #d9534f; /* Bootstrap red color for indicating warning/error */
+  color: #d9534f;
   font-size: 16px;
   font-weight: bold;
   margin-top: 20px;
   padding: 10px;
-  border: 1px solid #d9534f; /* Red border to make the message stand out */
-  background-color: #f2dede; /* Light red background */
+  border: 1px solid #d9534f;
+  background-color: #f2dede;
   border-radius: 5px;
   text-align: center;
+}
+
+.highlight {
+  font-weight: bold;
+  color: #ff7e5f; /* Highlight color */
+  background-color: #fff3f0; /* Light background for contrast */
+  padding: 2px 4px;
+  border-radius: 4px;
 }
 
 @media (max-width: 600px) {

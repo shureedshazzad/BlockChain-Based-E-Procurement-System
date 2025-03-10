@@ -20,6 +20,7 @@ const TenderNotice = () => {
   const [isTenderOpen, setIsTenderOpen] = useState(false);
   const [hasSubmittedBid, setHasSubmittedBid] = useState(false);
   const [isWithdrawing, setIsWithdrawing] = useState(false); // Loading state for withdrawing
+  const [noticeText, setNoticeText] = useState(""); // State to store the fetched notice text
 
   const router = useRouter(); // Next.js router for navigation
 
@@ -71,6 +72,13 @@ const TenderNotice = () => {
         // Check if the user has already submitted a bid
         const bidStatus = await contract.hasSubmittedBid(connectedAccount);
         setHasSubmittedBid(bidStatus);
+
+        // Fetch the notice text from IPFS
+        if (tender.noticeDocumentHash) {
+          const response = await fetch(`https://gateway.pinata.cloud/ipfs/${tender.noticeDocumentHash}`);
+          const tenderData = await response.json();
+          setNoticeText(tenderData.noticeText); // Extract and set the notice text
+        }
 
       } catch (error) {
         console.error("Error fetching tender details:", error);
@@ -147,17 +155,12 @@ const TenderNotice = () => {
           <div className={styles.card}>
             <h2 className={styles.subheading}>Active Tender Details</h2>
             <p><strong>Description:</strong> {activeTender.description}</p>
-            <p>
-              <strong>Notice Document:</strong>{" "}
-              <a
-                href={`https://gateway.pinata.cloud/ipfs/${activeTender.noticeDocumentHash}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={styles.link}
-              >
-                View Document
-              </a>
-            </p>
+            {noticeText && (
+              <div className={styles.noticeContainer}>
+                <h3 className={styles.noticeHeading}>Tender Notice:</h3>
+                <pre className={styles.noticeText}>{noticeText}</pre>
+              </div>
+            )}
             {Number(activeTender.additionalInfo) === 0 ? (
               <>
                 <p>

@@ -223,6 +223,16 @@ contract BidChain {
         emit TenderOpened(activeTender.description, activeTender.noticeDocumentHash, activeTender.submissionEndTime, activeTender.additionalInfo); // Optional: Update if you track state changes
     }
 
+
+   // Function to get the IPFS hash of the tender notice document
+   function getNoticeDocumentHash() external view returns (string memory) {
+       require(activeTender.isOpen, "No active tender is open"); // Ensure the tender is active
+       require(activeTender.additionalInfo == 1, "Tender is not closed yet"); // Ensure tender evaluation is done
+       require(bytes(activeTender.noticeDocumentHash).length > 0, "No valid notice document available"); // Ensure the hash exists
+       return activeTender.noticeDocumentHash;
+   }
+    
+
     // Function to cancel the tender
     function cancelTender() external onlyOwner {
         require(activeTender.isOpen, "No active tender");

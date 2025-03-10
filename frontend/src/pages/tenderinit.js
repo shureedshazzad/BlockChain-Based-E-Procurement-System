@@ -1,104 +1,342 @@
 import React, { useState } from "react";
-import useContract from "@/hooks/useContract"; // Import the custom hook for interacting with the smart contract
-import { toast } from "react-toastify"; // Import toast for notifications
-import { uploadToPinata } from "@/utils/pinata"; // Import Pinata upload utility to handle file uploads
-import styles from "@/styles/TenderInit.module.css"; // Import component-specific styles
-import { useRouter } from "next/router"; // Import Next.js router for navigation
-
-import dotenv from "dotenv"
-
-dotenv.config();
+import useContract from "@/hooks/useContract"; // Hook for interacting with the smart contract
+import { toast } from "react-toastify"; // For notifications
+import { uploadToPinata } from "@/utils/pinata"; // Utility for uploading to IPFS
+import styles from "@/styles/TenderInit.module.css"; // CSS for styling
+import { useRouter } from "next/router"; // For navigation
 
 const TenderInitialize = () => {
-  const router = useRouter(); // Initialize router for page navigation after success
-  const { contract, currentNonce } = useContract(process.env.NEXT_PUBLIC_DEPLOYED_ADDRESS); // Get the contract and current nonce for transaction management
-  const [description, setDescription] = useState(""); // State for storing the tender description
-  const [duration, setDuration] = useState(0); // State for storing the tender duration in seconds
-  const [file, setFile] = useState(null); // State for storing the uploaded file
-  const [loading, setLoading] = useState(false); // State to manage loading state during file upload and contract interaction
-  const [noticeDocumentHash, setNoticeDocumentHash] = useState(""); // State for storing the uploaded file's IPFS hash
+  const router = useRouter(); // Router for navigation
+  const { contract, currentNonce } = useContract(process.env.NEXT_PUBLIC_DEPLOYED_ADDRESS); // Contract and nonce
+  const [description, setDescription] = useState(""); // Tender description
+  const [duration, setDuration] = useState(0); // Tender duration in seconds
+  const [loading, setLoading] = useState(false); // Loading state
+  const [notice, setNotice] = useState(""); // Generated tender notice
+  const [formData, setFormData] = useState({
+    projectName: "",
+    projectType: "",
+    projectStartTime: "",
+    projectEndTime: "",
+    budget: "",
+    location: "",
+    requiredExperience: "",
+    safetyStandards: "",
+    materialQuality: "",
+    workforceSize: "",
+    completionDeadline: "",
+    environmentalImpact: "",
+  }); // Form data for tender requirements
 
-  // Handle file change (when a user selects a file)
-  const handleFileChange = (e) => {
-    setFile(e.target.files[0]); // Set the selected file
+  // Handle input changes for tender requirements
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
   };
 
-  // Handle form submission (tender initialization)
-  const handleSubmit = async (e) => {
-    e.preventDefault(); // Prevent default form submission
-    if (!contract || !file) {
-      toast.error("Please connect wallet and upload a file."); // Notify if contract or file is missing
+  // Validate form fields
+  const validateForm = () => {
+    const { projectStartTime, projectEndTime, budget, workforceSize, completionDeadline } = formData;
+    const startTime = new Date(projectStartTime);
+    const endTime = new Date(projectEndTime);
+    const now = new Date();
+
+    if (startTime <= now) {
+      toast.error("Project start time must be in the future.");
+      return false;
+    }
+
+    if (endTime <= startTime) {
+      toast.error("Project end time must be after the start time.");
+      return false;
+    }
+
+    if (budget <= 0) {
+      toast.error("Budget must be greater than 0.");
+      return false;
+    }
+
+    if (workforceSize <= 0) {
+      toast.error("Workforce size must be greater than 0.");
+      return false;
+    }
+
+    if (completionDeadline <= 0) {
+      toast.error("Completion deadline must be greater than 0.");
+      return false;
+    }
+
+    return true;
+  };
+
+  // Generate tender notice from form data
+  const generateNotice = () => {
+    if (!validateForm()) return;
+
+    const noticeText = `
+      Tender Notice for Construction Project
+
+      Project Name: ${formData.projectName}
+      Project Type: ${formData.projectType}
+      Project Start Time: ${formData.projectStartTime}
+      Project End Time: Within ${formData.projectEndTime}
+      Estimated Budget:Within ${formData.budget}
+      Location: ${formData.location}
+      Required Experience: At Least ${formData.requiredExperience} years
+      Safety Standards: ${formData.safetyStandards}
+      Material Quality: ${formData.materialQuality}
+      Workforce Size: At Least ${formData.workforceSize} workers
+      Completion Duration: ${formData.completionDeadline} days
+      Environmental Impact: ${formData.environmentalImpact}
+
+      Description: ${description}
+
+      Note: Bidders are required to adhere to the specified safety standards, material quality, and environmental impact guidelines. The project must be completed within the stipulated deadline.
+    `;
+    setNotice(noticeText);
+    toast.success("Tender notice generated successfully!");
+  };
+
+  // Handle tender confirmation
+  const handleConfirmTender = async () => {
+    if (!notice || !contract) {
+      toast.error("Please generate the tender notice and connect wallet.");
       return;
     }
 
     try {
-      setLoading(true); // Set loading state to true to indicate ongoing operations
-      console.log("Uploading file to Pinata...");
-      const hash = await uploadToPinata(file); // Upload the file to Pinata and get the IPFS hash
-      console.log("File uploaded with hash:", hash);
-      setNoticeDocumentHash(hash); // Store the hash in state
+      setLoading(true);
 
+      // Combine all data into a single JSON object
+      const tenderData = {
+        ...formData,
+        description,
+        noticeText: notice,
+      };
+
+      // Upload JSON object to IPFS
+      const tenderDataFile = new File([JSON.stringify(tenderData)], "tenderData.json", { type: "application/json" });
+      const noticeHash = await uploadToPinata(tenderDataFile);
+      console.log("Tender data uploaded with hash:", noticeHash);
+
+      // Call smart contract method
       console.log("Calling smart contract method...");
-      // Call the smart contract method `openTender` with description, file hash, and duration
-      const tx = await contract.openTender(description, hash, duration, {
-        nonce: currentNonce, // Pass the current nonce to prevent replay attacks
+      const tx = await contract.openTender(description, noticeHash, duration, {
+        nonce: currentNonce,
       });
-      await tx.wait(); // Wait for the transaction to be mined
+      await tx.wait();
 
-      toast.success("Tender initialized successfully!"); // Notify user of success
-      router.push("/"); // Redirect to the homepage or other relevant page
+      toast.success("Tender confirmed successfully!");
+      router.push("/");
     } catch (error) {
-      console.error("Error initializing tender:", error);
-      toast.error("Error initializing tender"); // Notify user in case of error
+      console.error("Error confirming tender:", error);
+      toast.error("Error confirming tender.");
     } finally {
-      setLoading(false); // Reset loading state after completion (success or failure)
+      setLoading(false);
     }
   };
 
   return (
     <div className={styles.container}>
-      {/* Form to initialize a new tender */}
-      <form className={styles.form} onSubmit={handleSubmit}>
-        {/* Tender description input field */}
+      <h1 className={styles.heading}>Initialize New Construction Tender</h1>
+      <form className={styles.form}>
+        {/* Tender Description */}
         <div className={styles.formGroup}>
-          <label className={styles.label}>Description:</label>
+          <label className={styles.label}>Tender Description:</label>
           <input
             type="text"
             className={styles.input}
             value={description}
-            onChange={(e) => setDescription(e.target.value)} // Update description state on input change
+            onChange={(e) => setDescription(e.target.value)}
             required
           />
         </div>
 
-        {/* Tender duration input field */}
+        {/* Tender Duration */}
         <div className={styles.formGroup}>
-          <label className={styles.label}>Duration (in seconds):</label>
+          <label className={styles.label}>Tender Duration (in seconds):</label>
           <input
             type="number"
             className={styles.input}
             value={duration}
-            onChange={(e) => setDuration(Number(e.target.value))} // Update duration state on input change
+            onChange={(e) => setDuration(Number(e.target.value))}
             required
           />
         </div>
 
-        {/* File upload field for the notice document */}
+        {/* Tender Requirements */}
         <div className={styles.formGroup}>
-          <label className={styles.label}>Notice Document (PDF):</label>
+          <label className={styles.label}>Project Name:</label>
           <input
-            type="file"
-            className={styles.inputFile}
-            accept=".pdf" // Only accept PDF files
-            onChange={handleFileChange} // Handle file change event
+            type="text"
+            name="projectName"
+            value={formData.projectName}
+            onChange={handleInputChange}
+            className={styles.input}
             required
           />
         </div>
 
-        {/* Submit button for the form */}
-        <button className={styles.button} type="submit" disabled={loading}>
-          {loading ? "Initializing..." : "Initialize Tender"} {/* Button text changes based on loading state */}
-        </button>
+        <div className={styles.formGroup}>
+          <label className={styles.label}>Project Type:</label>
+          <input
+            type="text"
+            name="projectType"
+            value={formData.projectType}
+            onChange={handleInputChange}
+            className={styles.input}
+            required
+          />
+        </div>
+
+      <div className={styles.formGroup}>
+       <label className={styles.label}>Project Start Time:</label>
+       <input
+       type="date"
+       name="projectStartTime"
+       value={formData.projectStartTime}
+       onChange={handleInputChange}
+       className={styles.input}
+       min={new Date().toISOString().slice(0, 16)} // Set min to current date and time
+       required
+       />
+       </div>
+
+       <div className={styles.formGroup}>
+        <label className={styles.label}>Project End Time:</label>
+        <input
+        type="date"
+        name="projectEndTime"
+        value={formData.projectEndTime}
+        onChange={handleInputChange}
+        className={styles.input}
+        min={formData.projectStartTime || new Date().toISOString().slice(0, 16)} // Set min to start time or current date
+        required
+       />
+      </div>
+
+        <div className={styles.formGroup}>
+          <label className={styles.label}>Budget ($):</label>
+          <input
+            type="number"
+            name="budget"
+            value={formData.budget}
+            onChange={handleInputChange}
+            className={styles.input}
+            required
+          />
+        </div>
+
+        <div className={styles.formGroup}>
+          <label className={styles.label}>Location:</label>
+          <input
+            type="text"
+            name="location"
+            value={formData.location}
+            onChange={handleInputChange}
+            className={styles.input}
+            required
+          />
+        </div>
+
+        <div className={styles.formGroup}>
+          <label className={styles.label}>Required Experience (years):</label>
+          <input
+            type="number"
+            name="requiredExperience"
+            value={formData.requiredExperience}
+            onChange={handleInputChange}
+            className={styles.input}
+            required
+          />
+        </div>
+
+        <div className={styles.formGroup}>
+          <label className={styles.label}>Safety Standards:</label>
+          <input
+            type="text"
+            name="safetyStandards"
+            value={formData.safetyStandards}
+            onChange={handleInputChange}
+            className={styles.input}
+            required
+          />
+        </div>
+
+        <div className={styles.formGroup}>
+          <label className={styles.label}>Material Quality:</label>
+          <input
+            type="text"
+            name="materialQuality"
+            value={formData.materialQuality}
+            onChange={handleInputChange}
+            className={styles.input}
+            required
+          />
+        </div>
+
+        <div className={styles.formGroup}>
+          <label className={styles.label}>Workforce Size:</label>
+          <input
+            type="number"
+            name="workforceSize"
+            value={formData.workforceSize}
+            onChange={handleInputChange}
+            className={styles.input}
+            required
+          />
+        </div>
+
+        <div className={styles.formGroup}>
+          <label className={styles.label}>Completion Deadline (days):</label>
+          <input
+            type="number"
+            name="completionDeadline"
+            value={formData.completionDeadline}
+            onChange={handleInputChange}
+            className={styles.input}
+            required
+          />
+        </div>
+
+        <div className={styles.formGroup}>
+          <label className={styles.label}>Environmental Impact:</label>
+          <input
+            type="text"
+            name="environmentalImpact"
+            value={formData.environmentalImpact}
+            onChange={handleInputChange}
+            className={styles.input}
+            required
+          />
+        </div>
+
+        {/* Buttons */}
+        <div className={styles.buttonGroup}>
+          <button
+            type="button"
+            className={styles.button}
+            onClick={generateNotice}
+            disabled={loading}
+          >
+            Create Notice
+          </button>
+          <button
+            type="button"
+            className={styles.button}
+            onClick={handleConfirmTender}
+            disabled={!notice || loading}
+          >
+            {loading ? "Confirming..." : "Confirm Tender"}
+          </button>
+        </div>
+
+        {/* Generated Notice */}
+        {notice && (
+          <div className={styles.noticeContainer}>
+            <h3 className={styles.noticeHeading}>Generated Tender Notice:</h3>
+            <pre className={styles.noticeText}>{notice}</pre>
+          </div>
+        )}
       </form>
     </div>
   );
