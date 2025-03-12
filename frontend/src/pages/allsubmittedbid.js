@@ -50,6 +50,22 @@ const AllSubmittedBids = () => {
       // Fetch all submitted bid details
       const [addresses, amounts, ipfsHashes, encryptedKeyHashes] = await contract.viewSubmittedBids();
 
+      //fecth the tender details from ipfs
+      const tenderDetails = await contract.viewActiveTenderDetails();
+      const tender = {
+        description: tenderDetails[0],
+        noticeDocumentHash: tenderDetails[1],
+        submissionEndTime: tenderDetails[2],
+        additionalInfo: tenderDetails[3],
+        isOpen: tenderDetails[4],
+      };
+
+        
+        const response = await fetch(`https://gateway.pinata.cloud/ipfs/${tender.noticeDocumentHash}`);
+        const tenderData = await response.json();
+        console.log(tenderData.tenderData);
+      
+
       for (let i = 0; i < addresses.length; i++) {
         console.log("Bidder Address:", addresses[i]);
 

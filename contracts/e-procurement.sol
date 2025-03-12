@@ -337,7 +337,6 @@ contract BidChain {
         int256 additionalInfo,
         bool isOpen
     ) {
-        require(activeTender.isOpen, "No active tender"); // Ensure there is an active tender
         require(contractors[msg.sender].isRegistered || msg.sender == owner, "Not authorized"); // Ensure the caller is either a registered contractor or the owner
 
         return (

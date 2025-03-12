@@ -17,6 +17,7 @@
     "ethers": "^6.13.4",
     "fast-text-encoding": "^1.0.6",
     "formik": "^2.4.6",
+    "http-proxy": "^1.18.1",
     "next": "15.0.3",
     "pdf-parse": "^1.1.1",
     "pdfjs-dist": "^4.10.38",
