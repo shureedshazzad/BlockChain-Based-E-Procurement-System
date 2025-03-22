@@ -18,6 +18,8 @@ const AllSubmittedBids = () => {
 
   const router = useRouter();
 
+
+  //fetch all bidder addresses when contract in loaded
   useEffect(() => {
     const fetchBidderAddresses = async () => {
       if (!contract) return;
@@ -39,6 +41,32 @@ const AllSubmittedBids = () => {
   const handleButtonClick = (address) => {
     router.push(`/bidinfoofspecificbidder?address=${address}`);
   };
+
+
+    // Function to send bid data to the Python backend for fuzzy logic evaluation
+    const sendBidsForEvaluation = async (bids, tender) => {
+      try {
+        const response = await fetch("/api/evaluate_bids", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            tenderDetails: tender,
+            bids: bids,
+          }),
+        });
+  
+        const result = await response.json();
+        console.log("Fuzzy Logic Evaluation Result:", result);
+      } catch (error) {
+        console.error("Error sending bid data for evaluation:", error);
+      }
+    };
+  
+
+
+
 
   // Function to fetch & decrypt all bid data
   const fetchAndDecryptAllBids = async () => {
@@ -64,9 +92,11 @@ const AllSubmittedBids = () => {
         const response = await fetch(`https://gateway.pinata.cloud/ipfs/${tender.noticeDocumentHash}`);
         const tenderData = await response.json();
         console.log(tenderData.tenderData);
-      
+        
+        let allBids = [];
 
-      for (let i = 0; i < addresses.length; i++) {
+
+       for (let i = 0; i < addresses.length; i++) {
         console.log("Bidder Address:", addresses[i]);
 
         // Fetch encrypted bid document from IPFS
@@ -84,6 +114,31 @@ const AllSubmittedBids = () => {
         const decryptedBidDetails = await decryptData(encryptedData, decryptedKey);
 
         console.log("Decrypted Bid Data:", decryptedBidDetails);
+
+              // Add decrypted bid details to the list
+       allBids.push({
+        bidder: addresses[i],
+        companyName: decryptedBidDetails.companyName,
+        projectName: decryptedBidDetails.projectName,
+        projectType: decryptedBidDetails.projectType,
+        projectStartTime: decryptedBidDetails.projectStartTime,
+        projectEndTime: decryptedBidDetails.projectEndTime,
+        budget: parseFloat(decryptedBidDetails.budget),
+        location: decryptedBidDetails.location,
+        requiredExperience: parseFloat(decryptedBidDetails.requiredExperience),
+        safetyStandards: decryptedBidDetails.safetyStandards,
+        materialQuality: decryptedBidDetails.materialQuality,
+        workforceSize: parseFloat(decryptedBidDetails.workforceSize),
+        completionDeadline: parseFloat(decryptedBidDetails.completionDeadline),
+        environmentalImpact: decryptedBidDetails.environmentalImpact,
+        description: decryptedBidDetails.description,
+        reputation: Math.random() * 100, // Placeholder for reputation
+        });
+
+
+        
+      // Send all decrypted bids to the Python backend for fuzzy logic evaluation
+      sendBidsForEvaluation(allBids, tenderData);
       }
     } catch (error) {
       console.error("Error fetching or decrypting bid details:", error);
@@ -156,7 +211,7 @@ const AllSubmittedBids = () => {
           onClick={fetchAndDecryptAllBids}
           disabled={isDecrypting}
         >
-          {isDecrypting ? "Decrypting..." : "Test"}
+          {isDecrypting ? "Decrypting..." : "Announce Winner"}
         </button>
       </div>
     </div>
