@@ -15,8 +15,6 @@ const TenderInitialize = () => {
   const [formData, setFormData] = useState({
     projectName: "",
     projectType: "",
-    projectStartTime: "",
-    projectEndTime: "",
     budget: "",
     location: "",
     requiredExperience: "",
@@ -35,20 +33,8 @@ const TenderInitialize = () => {
 
   // Validate form fields
   const validateForm = () => {
-    const { projectStartTime, projectEndTime, budget, workforceSize, completionDeadline } = formData;
-    const startTime = new Date(projectStartTime);
-    const endTime = new Date(projectEndTime);
-    const now = new Date();
-
-    if (startTime <= now) {
-      toast.error("Project start time must be in the future.");
-      return false;
-    }
-
-    if (endTime <= startTime) {
-      toast.error("Project end time must be after the start time.");
-      return false;
-    }
+    const {  budget, workforceSize, completionDeadline } = formData;
+    
 
     if (budget <= 0) {
       toast.error("Budget must be greater than 0.");
@@ -77,15 +63,13 @@ const TenderInitialize = () => {
 
       Project Name: ${formData.projectName}
       Project Type: ${formData.projectType}
-      Project Start Time: ${formData.projectStartTime}
-      Project End Time: Within ${formData.projectEndTime}
       Estimated Budget:Within ${formData.budget}
       Location: ${formData.location}
       Required Experience: At Least ${formData.requiredExperience} years
       Safety Standards: ${formData.safetyStandards}
       Material Quality: ${formData.materialQuality}
       Workforce Size: At Least ${formData.workforceSize} workers
-      Completion Duration: ${formData.completionDeadline} days
+      Completion Duration: Within ${formData.completionDeadline} days
       Environmental Impact: ${formData.environmentalImpact}
 
       Description: ${description}
@@ -188,32 +172,6 @@ const TenderInitialize = () => {
           />
         </div>
 
-      <div className={styles.formGroup}>
-       <label className={styles.label}>Project Start Time:</label>
-       <input
-       type="date"
-       name="projectStartTime"
-       value={formData.projectStartTime}
-       onChange={handleInputChange}
-       className={styles.input}
-       min={new Date().toISOString().slice(0, 16)} // Set min to current date and time
-       required
-       />
-       </div>
-
-       <div className={styles.formGroup}>
-        <label className={styles.label}>Project End Time:</label>
-        <input
-        type="date"
-        name="projectEndTime"
-        value={formData.projectEndTime}
-        onChange={handleInputChange}
-        className={styles.input}
-        min={formData.projectStartTime || new Date().toISOString().slice(0, 16)} // Set min to start time or current date
-        required
-       />
-      </div>
-
         <div className={styles.formGroup}>
           <label className={styles.label}>Budget ($):</label>
           <input
@@ -251,7 +209,7 @@ const TenderInitialize = () => {
         </div>
 
         <div className={styles.formGroup}>
-          <label className={styles.label}>Safety Standards:</label>
+          <label className={styles.label}>Preferred Safety Standards:</label>
           <input
             type="text"
             name="safetyStandards"
@@ -263,7 +221,7 @@ const TenderInitialize = () => {
         </div>
 
         <div className={styles.formGroup}>
-          <label className={styles.label}>Material Quality:</label>
+          <label className={styles.label}>Preferred Material Quality:</label>
           <input
             type="text"
             name="materialQuality"

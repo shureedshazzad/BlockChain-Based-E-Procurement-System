@@ -119,20 +119,14 @@ const AllSubmittedBids = () => {
        allBids.push({
         bidder: addresses[i],
         companyName: decryptedBidDetails.companyName,
-        projectName: decryptedBidDetails.projectName,
-        projectType: decryptedBidDetails.projectType,
         projectStartTime: decryptedBidDetails.projectStartTime,
         projectEndTime: decryptedBidDetails.projectEndTime,
         budget: parseFloat(decryptedBidDetails.budget),
-        location: decryptedBidDetails.location,
         requiredExperience: parseFloat(decryptedBidDetails.requiredExperience),
         safetyStandards: decryptedBidDetails.safetyStandards,
         materialQuality: decryptedBidDetails.materialQuality,
         workforceSize: parseFloat(decryptedBidDetails.workforceSize),
-        completionDeadline: parseFloat(decryptedBidDetails.completionDeadline),
         environmentalImpact: decryptedBidDetails.environmentalImpact,
-        description: decryptedBidDetails.description,
-        reputation: Math.random() * 100, // Placeholder for reputation
         });
 
 
