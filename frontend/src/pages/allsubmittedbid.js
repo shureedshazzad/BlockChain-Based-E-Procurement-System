@@ -7,6 +7,7 @@ import CryptoJS from "crypto-js";
 import dotenv from "dotenv";
 import init, * as ecies from "ecies-wasm";
 import { ec as EC } from "elliptic";
+import WinnerModal from "@/components/WinnerModal";
 
 dotenv.config();
 
@@ -15,6 +16,10 @@ const AllSubmittedBids = () => {
   const [bidderAddresses, setBidderAddresses] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isDecrypting, setIsDecrypting] = useState(false); // For Test button loading state
+
+
+  const [winner, setWinner] = useState(null);
+  const [showWinnerModal, setShowWinnerModal] = useState(false);
 
   const router = useRouter();
 
@@ -133,6 +138,10 @@ const AllSubmittedBids = () => {
         
       // Send all decrypted bids to the Python backend for fuzzy logic evaluation
       sendBidsForEvaluation(allBids, tenderData);
+
+      const evaluationResponse = await sendBidsForEvaluation(allBids, tenderData);
+      setWinner(evaluationResponse.winner);
+      setShowWinnerModal(true);
       }
     } catch (error) {
       console.error("Error fetching or decrypting bid details:", error);
@@ -208,6 +217,14 @@ const AllSubmittedBids = () => {
           {isDecrypting ? "Decrypting..." : "Announce Winner"}
         </button>
       </div>
+
+      {showWinnerModal && (
+      <WinnerModal 
+        winner={winner} 
+        onClose={() => setShowWinnerModal(false)} 
+      />
+    )}
+
     </div>
   );
 };

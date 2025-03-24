@@ -17,6 +17,8 @@ const BidInfoOfSpecificBidder = () => {
   const [loading, setLoading] = useState(false);
   const [bidDocument, setBidDocument] = useState(""); // State to store the bid document
 
+  
+
 
   // Fetch submitted bid details from the smart contract
   const fetchBidDetails = async () => {
