@@ -64,6 +64,7 @@ const AllSubmittedBids = () => {
   
         const result = await response.json();
         console.log("Fuzzy Logic Evaluation Result:", result);
+        return result;
       } catch (error) {
         console.error("Error sending bid data for evaluation:", error);
       }
@@ -133,11 +134,6 @@ const AllSubmittedBids = () => {
         workforceSize: parseFloat(decryptedBidDetails.workforceSize),
         environmentalImpact: decryptedBidDetails.environmentalImpact,
         });
-
-
-        
-      // Send all decrypted bids to the Python backend for fuzzy logic evaluation
-      sendBidsForEvaluation(allBids, tenderData);
 
       const evaluationResponse = await sendBidsForEvaluation(allBids, tenderData);
       setWinner(evaluationResponse.winner);
