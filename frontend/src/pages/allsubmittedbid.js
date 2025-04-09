@@ -9,6 +9,8 @@ import init, * as ecies from "ecies-wasm";
 import { ec as EC } from "elliptic";
 import WinnerModal from "@/components/WinnerModal";
 
+
+
 dotenv.config();
 
 const AllSubmittedBids = () => {
@@ -16,6 +18,8 @@ const AllSubmittedBids = () => {
   const [bidderAddresses, setBidderAddresses] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isDecrypting, setIsDecrypting] = useState(false); // For Test button loading state
+  const [verificationError, setVerificationError] = useState(false); // New state for verification error
+
 
 
   const [winner, setWinner] = useState(null);
@@ -79,12 +83,10 @@ const AllSubmittedBids = () => {
     if (!contract) return;
     try {
       setIsDecrypting(true);
+      setVerificationError(false); // Reset verification error
       console.log("Fetching submitted bids...");
 
-      // Fetch all submitted bid details
       const [addresses, amounts, ipfsHashes, encryptedKeyHashes] = await contract.viewSubmittedBids();
-
-      //fecth the tender details from ipfs
       const tenderDetails = await contract.viewActiveTenderDetails();
       const tender = {
         description: tenderDetails[0],
@@ -93,58 +95,71 @@ const AllSubmittedBids = () => {
         additionalInfo: tenderDetails[3],
         isOpen: tenderDetails[4],
       };
-
         
-        const response = await fetch(`https://gateway.pinata.cloud/ipfs/${tender.noticeDocumentHash}`);
-        const tenderData = await response.json();
-        console.log(tenderData.tenderData);
-        
-        let allBids = [];
+      const response = await fetch(`https://gateway.pinata.cloud/ipfs/${tender.noticeDocumentHash}`);
+      const tenderData = await response.json();
+      console.log(tenderData.tenderData);
+      
+      let allBids = [];
 
-
-       for (let i = 0; i < addresses.length; i++) {
+      for (let i = 0; i < addresses.length; i++) {
         console.log("Bidder Address:", addresses[i]);
 
-        // Fetch encrypted bid document from IPFS
         const dataResponse = await axios.get(`https://gateway.pinata.cloud/ipfs/${ipfsHashes[i]}`);
         const encryptedData = dataResponse.data;
 
-        // Fetch encrypted symmetric key from IPFS
         const keyResponse = await axios.get(`https://gateway.pinata.cloud/ipfs/${encryptedKeyHashes[i]}`);
         const encryptedKey = keyResponse.data;
 
-        // Decrypt the AES key
         const decryptedKey = await decryptSymmetricKey(encryptedKey);
-
-        // Decrypt bid details using AES key
         const decryptedBidDetails = await decryptData(encryptedData, decryptedKey);
 
         console.log("Decrypted Bid Data:", decryptedBidDetails);
 
-              // Add decrypted bid details to the list
-       allBids.push({
-        bidder: addresses[i],
-        companyName: decryptedBidDetails.companyName,
-        projectStartTime: decryptedBidDetails.projectStartTime,
-        projectEndTime: decryptedBidDetails.projectEndTime,
-        budget: parseFloat(decryptedBidDetails.budget),
-        requiredExperience: parseFloat(decryptedBidDetails.requiredExperience),
-        safetyStandards: decryptedBidDetails.safetyStandards,
-        materialQuality: decryptedBidDetails.materialQuality,
-        workforceSize: parseFloat(decryptedBidDetails.workforceSize),
-        environmentalImpact: decryptedBidDetails.environmentalImpact,
+        allBids.push({
+          bidder: addresses[i],
+          companyName: decryptedBidDetails.companyName,
+          projectStartTime: decryptedBidDetails.projectStartTime,
+          projectEndTime: decryptedBidDetails.projectEndTime,
+          budget: parseFloat(decryptedBidDetails.budget),
+          requiredExperience: parseFloat(decryptedBidDetails.requiredExperience),
+          safetyStandards: decryptedBidDetails.safetyStandards,
+          materialQuality: decryptedBidDetails.materialQuality,
+          workforceSize: parseFloat(decryptedBidDetails.workforceSize),
+          environmentalImpact: decryptedBidDetails.environmentalImpact,
         });
+      }
 
       const evaluationResponse = await sendBidsForEvaluation(allBids, tenderData);
-      setWinner(evaluationResponse.winner);
-      setShowWinnerModal(true);
+      const commitment = evaluationResponse.zk_commitment;
+      const salt = evaluationResponse.salt;
+      const result = evaluationResponse.result_summary;
+      const validcommitment = '0x' + commitment;
+
+      // Submit commitment to blockchain
+      const tx = await contract.submitCommitment(validcommitment);
+      await tx.wait();
+      console.log("📝 Commitment stored on-chain");
+
+      // Verify the result
+      const isValid = await contract.verifyResult(result, salt);
+      console.log("🔍 Verification result:", isValid);
+
+      if (isValid) {
+        setWinner(evaluationResponse.winner);
+        setShowWinnerModal(true);
+      } else {
+        setVerificationError(true);
+        console.error("Computation has been corrupted - verification failed");
       }
+
     } catch (error) {
       console.error("Error fetching or decrypting bid details:", error);
     } finally {
       setIsDecrypting(false);
     }
   };
+
 
   // Decrypt the symmetric AES key (using a password-based key derivation)
   const decryptSymmetricKey = async (encryptedKey) => {
@@ -213,6 +228,13 @@ const AllSubmittedBids = () => {
           {isDecrypting ? "Decrypting..." : "Announce Winner"}
         </button>
       </div>
+
+       {/* Show verification error if verification failed */}
+       {verificationError && (
+        <div className={styles.errorMessage}>
+          <p>Computation has been corrupted - verification failed</p>
+        </div>
+      )}
 
       {showWinnerModal && (
       <WinnerModal 

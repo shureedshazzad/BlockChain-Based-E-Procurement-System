@@ -200,4 +200,16 @@
   .pdfViewer iframe {
     height: 400px;
   }
+
+
+  .errorMessage {
+    color: #d32f2f;
+    background-color: #ffebee;
+    padding: 12px;
+    border-radius: 4px;
+    margin: 16px auto;
+    max-width: 500px;
+    text-align: center;
+    border-left: 4px solid #d32f2f;
+  }
 }

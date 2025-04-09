@@ -1,6 +1,10 @@
 from flask import Flask, jsonify, request
 import numpy as np
 from datetime import datetime
+import hashlib
+import json
+import os
+from web3 import Web3
 
 
 app = Flask(__name__)
@@ -61,12 +65,25 @@ def text_to_score(text, criterion_type):
 
 
 
+
+
 def calculate_duration(start_date, end_date):
     """Calculate duration in days between two dates"""
     fmt = "%Y-%m-%dT%H:%M"
     start = datetime.strptime(start_date, fmt)
     end = datetime.strptime(end_date, fmt)
     return (end - start).days
+
+def generate_commitment(winner, all_results):
+    salt = os.urandom(16).hex()  # generate a secure random 128-bit salt
+    result_data = json.dumps({
+        "winner": winner,
+        "scores": [r["score"] for r in all_results]
+    }, sort_keys=True)
+   # Replace hashlib usage with:
+    commitment = Web3.keccak(text=(result_data + salt)).hex()
+    return commitment, salt, result_data
+
 
 def fuzzy_moora_evaluation(bids, tender_details):
     """
@@ -236,6 +253,9 @@ def evaluate_bids():
             return jsonify({"status": "error", "message": "No bids provided"})
         # Perform Fuzzy MOORA evaluation
         evaluation_results = fuzzy_moora_evaluation(bids, tender)
+        winner = evaluation_results[0] if evaluation_results else None
+
+        commitment, salt, result_summary = generate_commitment(winner, evaluation_results)
 
         return jsonify({
             "status": "success",
@@ -249,8 +269,11 @@ def evaluate_bids():
                 'material': {'weight': 0.10},
                 'environment': {'weight': 0.05}
             }.items()},
-            "winner": evaluation_results[0] if evaluation_results else None,
-            "all_results": evaluation_results
+            "winner": winner,
+            "all_results": evaluation_results,
+            "zk_commitment": commitment,
+            "salt": salt,
+            "result_summary": result_summary
         })
 
     except ValueError as e:

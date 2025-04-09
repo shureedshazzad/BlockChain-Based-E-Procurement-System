@@ -31,6 +31,8 @@ contract BidChain {
         bool isWithdrawn;          // Status to indicate if the bid is withdrawn
     }
 
+    bytes32 public storedCommitment;
+
     // Contract owner (usually the principal or tender initiator)
     address public owner;
 
@@ -291,32 +293,24 @@ contract BidChain {
 
         emit BidWithdrawn(msg.sender); // Emit bid withdrawn event
     }
-
-
        // Function for a bidder to view their own bid information
     function viewMyBid() external view onlyRegisteredContractor returns (Bid memory) {
         require(bids[msg.sender].submitted, "No bid submitted"); // Ensure the contractor has submitted a bid
         return bids[msg.sender]; // Return the bid details of the caller
     }
 
-
-
-
-    // Announce the winner
-    function announceWinner(address _winner) external onlyOwner {
-        require(block.timestamp > activeTender.submissionEndTime, "Tender submission still open"); // Ensure submission period has ended
-        require(activeTender.isOpen, "No active tender"); // Ensure there is an active tender
-
-        bids[_winner].isWinner = true; // Mark the winning bid
-        activeTender.isOpen = false; // Close the tender
-        activeTender.winner = _winner; // Set the winner's address
-
-        emit WinnerAnnounced(_winner, bids[_winner].amount, bids[_winner].ipfsHash); // Emit event with the winner details
+    //function for submitting commitment
+    function submitCommitment(bytes32 commitment) external onlyOwner {
+        require(msg.sender == owner, "Only owner can submit commitment");
+        storedCommitment = commitment;
     }
 
-    // View function to get details of the winner's bid
-    function getWinnerDetails() external view returns (address, uint256, string memory) {
-        return (activeTender.winner, bids[activeTender.winner].amount, bids[activeTender.winner].ipfsHash); // Return winner's address, bid amount, and IPFS hash
+    //function for verifying the bid result
+    function verifyResult(string memory resultSummary, string memory salt) external view returns (bool) {
+        bytes32 recomputed = keccak256(
+        abi.encodePacked(resultSummary, salt)
+        );
+        return recomputed == storedCommitment;
     }
 
     // Utility function to retrieve all bidder addresses in the current tender
